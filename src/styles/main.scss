@@ -1,0 +1,639 @@
+/* ------------------------------------------------------------------
+   Electron Music — design tokens
+   视觉参照 Mass（塞壬唱片 / 莱茵生命终端）：暖白纸面 + 24px 细网格、
+   橄榄绿强调色、直角 1px 描边、等宽大写小标签、唯一的圆形是播放键。
+   控件结构与交互保持原样，只换皮。
+------------------------------------------------------------------- */
+
+/* HarmonyOS Sans SC：按字重拆成三个真实字面，而不是让浏览器伪粗体。
+   子集范围 = GBK 全部汉字（含繁体，约 2.1 万字）+ 拉丁 / 标点 / 假名
+   + 界面文案实际用字，woff2 压缩后每个字重约 3.1 MB。
+   许可证见 assets/fonts/LICENSE-HarmonyOS-Sans.txt。 */
+@font-face {
+  font-family: 'HarmonyOS Sans SC';
+  src: url('../assets/fonts/HarmonyOS_Sans_SC_Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'HarmonyOS Sans SC';
+  src: url('../assets/fonts/HarmonyOS_Sans_SC_Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'HarmonyOS Sans SC';
+  src: url('../assets/fonts/HarmonyOS_Sans_SC_Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --paper: #efede8;
+  --paper-2: #e6e3db;
+  --surface: #f7f6f2;
+  --surface-2: #fbfaf7;
+
+  --ink: #17160f;
+  --ink-soft: #3d3a31;
+  --muted: #8a8578;
+  --faint: #b4aea0;
+
+  --line: var(--track);
+  --line-strong: rgba(23, 22, 15, 0.4);
+  --line-soft: var(--hover);
+  --grid: rgba(23, 22, 15, 0.045);
+
+  --hover: rgba(23, 22, 15, 0.045);
+  --hover-strong: rgba(23, 22, 15, 0.1);
+  --hover-surface: rgba(23, 22, 15, 0.035);
+  --track: rgba(23, 22, 15, 0.14);
+  --bg-wash: rgba(239, 237, 232, 0.72);
+  --np-wash: linear-gradient(120deg, rgba(239, 237, 232, 0.72) 0%, rgba(239, 237, 232, 0.62) 48%, rgba(239, 237, 232, 0.76) 100%);
+  --titlebar-bg: rgba(239, 237, 232, 0.72);
+  --player-bg: rgba(239, 237, 232, 0.76);
+  --panel-bg: rgba(247, 246, 242, 0.8);
+  /* 玻璃面板比 --panel-bg 更透，专供 backdrop-filter 面板使用：
+     --panel-bg 的 0.8 会把背景糊掉的效果压得几乎看不见。 */
+  --glass-panel: rgba(247, 246, 242, 0.56);
+  --glass-edge: rgba(255, 255, 255, 0.55);
+  --field-bg: rgba(247, 246, 242, 0.55);
+  --row-current: rgba(247, 246, 242, 0.5);
+  --qr-mask: rgba(239, 237, 232, 0.88);
+  /* toast 用专用语义色，不跟 --ink/--paper 走（那两个在暗色下会反转） */
+  --toast-bg: #1b1a14;
+  --toast-fg: #f2f0e9;
+  --toast-edge: rgba(255, 255, 255, 0.1);
+  --glass-blur: 30px;
+  --glass-sat: 180%;
+
+  --accent: #6f754d;
+  --accent-dark: #58603c;
+  --accent-weak: rgba(111, 117, 77, 0.12);
+  --on-accent: #f7f6f2;
+  --danger: #8c3f2b;
+
+  --font-sans: 'HarmonyOS Sans SC', 'HarmonyOS Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-display: var(--font-sans);
+  --font-text: var(--font-sans);
+  --font-mono: 'Cascadia Mono', 'JetBrains Mono', Consolas, 'Courier New', monospace;
+
+  --titlebar: 64px;
+  --player: 74px;
+  --gutter: clamp(40px, 2vw, 64px);
+  --page-max: 1760px;
+  --rail: 296px;
+
+  --lyric-size: 19px;
+  --trans-size: 12px;
+
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --shadow: 0 14px 34px rgba(30, 26, 16, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-text);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.55;
+  color: var(--ink);
+  background: var(--paper);
+  overflow: hidden;
+  user-select: none;
+  /* 已有 400 / 500 / 700 三档真实字面，关掉合成字重，
+     避免请求到 600 / 900 时被浏览器算法拉粗、出现糊边 */
+  font-synthesis: none;
+  font-kerning: normal;
+  font-variant-ligatures: common-ligatures;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* 纸质网格底 */
+#app {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: -1px -1px;
+}
+
+#app.is-plain {
+  background-image: none;
+}
+
+/* 自定义背景图：底图上盖一层纸色，保证文字可读 */
+#app.has-bg {
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+    linear-gradient(var(--bg-wash), var(--bg-wash)),
+    var(--bg-image);
+  background-size: 24px 24px, 24px 24px, cover, cover;
+  background-position: -1px -1px, -1px -1px, center, center;
+}
+
+#app.has-bg.is-plain {
+  background-image:
+    linear-gradient(var(--bg-wash), var(--bg-wash)),
+    var(--bg-image);
+  background-size: cover, cover;
+}
+
+/* ---------------- 暗色 ---------------- */
+html[data-theme='dark'] {
+  --paper: #141410;
+  --paper-2: #1b1a15;
+  --surface: #1d1c16;
+  --surface-2: #232219;
+
+  --ink: #ece8dc;
+  --ink-soft: #cbc6b8;
+  --muted: #918c7e;
+  --faint: #6c685d;
+
+  --line: rgba(236, 232, 220, 0.14);
+  --line-strong: rgba(236, 232, 220, 0.32);
+  --line-soft: rgba(236, 232, 220, 0.08);
+  --grid: rgba(236, 232, 220, 0.045);
+
+  --hover: rgba(236, 232, 220, 0.06);
+  --hover-strong: rgba(236, 232, 220, 0.1);
+  --hover-surface: rgba(236, 232, 220, 0.05);
+  --track: rgba(236, 232, 220, 0.2);
+  --bg-wash: rgba(20, 20, 16, 0.76);
+  --np-wash: linear-gradient(120deg, rgba(20, 20, 16, 0.78) 0%, rgba(20, 20, 16, 0.68) 48%, rgba(20, 20, 16, 0.82) 100%);
+  --titlebar-bg: rgba(22, 21, 17, 0.7);
+  --player-bg: rgba(22, 21, 17, 0.74);
+  --panel-bg: rgba(24, 24, 19, 0.78);
+  --glass-panel: rgba(24, 24, 19, 0.5);
+  --glass-edge: rgba(255, 255, 255, 0.07);
+  --field-bg: rgba(29, 28, 22, 0.5);
+  --row-current: rgba(29, 28, 22, 0.55);
+  --qr-mask: rgba(20, 20, 16, 0.88);
+  --toast-bg: #2b2a22;
+  --toast-fg: #ece8dc;
+  --toast-edge: rgba(236, 232, 220, 0.18);
+
+  --accent: #8b9163;
+  --accent-dark: #767c50;
+  --accent-weak: rgba(139, 145, 99, 0.16);
+  --on-accent: #141410;
+  --danger: #c0715a;
+
+  --shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
+}
+
+html[data-theme='dark'] ::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+html[data-theme='dark'] ::-webkit-scrollbar-thumb {
+  background: rgba(236, 232, 220, 0.16);
+  background-clip: content-box;
+}
+
+html[data-theme='dark'] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(236, 232, 220, 0.3);
+  background-clip: content-box;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+  font-weight: normal;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  outline: none;
+}
+
+button {
+  cursor: pointer;
+  padding: 0;
+}
+
+img {
+  display: block;
+  /* 封面默认是可拖拽的，拖动会拽出一张幽灵图并盖住界面 */
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+input {
+  user-select: text;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* ---------------- 滚动条 ---------------- */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(23, 22, 15, 0.16);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(23, 22, 15, 0.32);
+  background-clip: content-box;
+}
+
+/* ---------------- 排版工具 ---------------- */
+.hb-display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.hb-mono {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 9px;
+  font-weight: 400;
+}
+
+.hb-wide {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+}
+
+.hb-muted {
+  color: var(--muted);
+}
+
+.hb-clamp-1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hb-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 小标签：Mass 里是等宽大写的灰字，没有黑块 */
+.hb-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+/* 实心橄榄块：播放全部一类的动作 */
+.hb-label--solid,
+.hb-label--inverse {
+  background: var(--accent);
+  color: var(--on-accent);
+  padding: 3px 8px 2px;
+}
+
+/* 旧的括号画框 / 四角黑点不再使用，保留类名以免模板报错 */
+.hb-frame {
+  position: relative;
+}
+.hb-frame::after {
+  content: none;
+}
+
+.hb-dots::before {
+  content: none;
+}
+
+/* ---------------- 控件 ---------------- */
+.hb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  transition: background 0.16s var(--ease), color 0.16s var(--ease), border-color 0.16s;
+
+  &:hover {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+
+  &--solid {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--on-accent);
+
+    &:hover {
+      background: var(--accent-dark);
+      border-color: var(--accent-dark);
+      color: var(--on-accent);
+    }
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.hb-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: var(--ink-soft);
+  transition: color 0.16s, background 0.16s;
+
+  &:hover {
+    color: var(--ink);
+    background: var(--hover);
+  }
+
+  &.is-active {
+    color: var(--accent);
+  }
+}
+
+.hb-rule {
+  height: 1px;
+  background: var(--line);
+  border: 0;
+  margin: 0;
+}
+
+.hb-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* 品牌字标：用设计稿的 wordmark 做 mask，颜色跟随 currentColor，
+   深浅色主题都能自动适配，不用准备两套图。 */
+.hb-wordmark {
+  display: inline-block;
+  flex: none;
+  height: 15px;
+  aspect-ratio: 454 / 76;
+  background: currentColor;
+  -webkit-mask: url('../assets/brand/electron-wordmark.png') no-repeat center / contain;
+  mask: url('../assets/brand/electron-wordmark.png') no-repeat center / contain;
+}
+
+/* ---------------- 亚克力 ----------------
+   顶栏 / 底栏 / 队列抽屉脱离文档流浮在内容之上，
+   用 backdrop-filter 把从下面穿过的内容糊开，
+   再叠一层极细的噪点（acrylic 的颗粒感靠这个，纯 blur 会显得像塑料）。 */
+.hb-acrylic {
+  isolation: isolate;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+}
+
+.hb-acrylic::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.14'/%3E%3C/svg%3E");
+  background-size: 140px 140px;
+}
+
+/* 全屏播放器打开时，顶栏整条都不再是窗口拖拽区，
+   否则它会抢走播放器顶部（退出键、歌词/翻译开关）的点击。 */
+html.np-open .titlebar {
+  -webkit-app-region: no-drag;
+  pointer-events: none;
+}
+
+.hb-page {
+  width: 100%;
+  max-width: var(--page-max);
+  margin-inline: auto;
+  padding: 28px var(--gutter) 40px;
+}
+
+/* 章节头：编号 + 标题 + 细线（对应 Mass 的 ALBUM INDEX 那一行） */
+.hb-section {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.hb-section__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+}
+
+.hb-section__line {
+  flex: 1;
+  height: 0;
+}
+
+.hb-section__more {
+  color: var(--muted);
+  transition: color 0.16s;
+
+  &:hover {
+    color: var(--ink);
+  }
+}
+
+.hb-lift {
+  transition: transform 0.22s var(--ease);
+}
+
+.hb-lift:hover {
+  transform: translateY(-2px);
+}
+
+/* 路由过渡 */
+/* 路由切换：内容上移 + 渐进模糊，和全屏播放器用同一套运动语言，
+   但幅度更小（页面不是覆盖层）。进场 expo-out，退场加速离场。 */
+.page-enter-active {
+  transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.26s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.page-leave-active {
+  transition: opacity 0.12s cubic-bezier(0.4, 0, 1, 1),
+    transform 0.14s cubic-bezier(0.4, 0, 1, 1),
+    filter 0.14s cubic-bezier(0.4, 0, 1, 1);
+  pointer-events: none;
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(12px);
+  filter: blur(9px);
+}
+
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+  filter: blur(7px);
+}
+
+/* 弹窗：遮罩淡入 + 面板渐进模糊（新建/编辑歌单、添加到歌单） */
+.dlg-enter-active,
+.dlg-leave-active {
+  transition: opacity 0.2s var(--ease);
+}
+.dlg-enter-active > *,
+.dlg-leave-active > * {
+  transition: opacity 0.26s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.26s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.dlg-enter-from,
+.dlg-leave-to {
+  opacity: 0;
+}
+.dlg-enter-from > *,
+.dlg-leave-to > * {
+  opacity: 0;
+  transform: scale(0.965) translateY(8px);
+  filter: blur(12px);
+}
+
+/* 淡入 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s var(--ease);
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* ---------------- 低性能模式 ----------------
+   禁用一切 backdrop-filter / 模糊 / 过渡 / 关键帧动画，
+   并把半透明面板 token 换成对应主题的不透明实色，
+   让集显 / 老机器在无 GPU 合成时也能流畅滚动与切页。 */
+html.low-perf {
+  /* 亮色实色覆盖 */
+  --bg-wash: #efede8;
+  --np-wash: #efede8;
+  --titlebar-bg: #efede8;
+  --player-bg: #efede8;
+  --panel-bg: #f7f6f2;
+  --glass-panel: #f7f6f2;
+  --glass-edge: rgba(23, 22, 15, 0.12);
+  --field-bg: #f7f6f2;
+  --row-current: #f0eee8;
+  --qr-mask: #efede8;
+  --glass-blur: 0px;
+  --glass-sat: 100%;
+}
+
+html.low-perf[data-theme='dark'] {
+  --bg-wash: #141410;
+  --np-wash: #141410;
+  --titlebar-bg: #161511;
+  --player-bg: #161511;
+  --panel-bg: #181813;
+  --glass-panel: #181813;
+  --glass-edge: rgba(236, 232, 220, 0.12);
+  --field-bg: #1d1c16;
+  --row-current: #232219;
+  --qr-mask: #141410;
+}
+
+/* 关键：所有元素不再做合成动画/滤镜 */
+html.low-perf *,
+html.low-perf *::before,
+html.low-perf *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* 低性能下仍可能出现的静态模糊：封面背景、返回键毛玻璃、节点滤镜。
+   统一把任何带 blur() 的 filter 清掉（保留 saturate 等无模糊滤镜）。 */
+html.low-perf *,
+html.low-perf *::before,
+html.low-perf *::after {
+  filter: none !important;
+}
+
+/* 亚克力面板改用实色，杜绝合成层 */
+html.low-perf .hb-acrylic {
+  background: var(--panel-bg) !important;
+}
+
+/* 纸张网格底在低性能下也去掉，减少大面积绘制 */
+html.low-perf #app {
+  background-image: none !important;
+}
+html.low-perf #app.has-bg {
+  background-image: var(--bg-image) !important;
+  background-size: cover !important;
+}
